@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reaction game</title>
+</head>
+<style>
+    html, body { height: 100%; margin: 0; padding: 0 }
+    .block { 
+        position: fixed;
+        width: 50%;
+        height: 50%;
+        font-size: 120px;
+        color: white;
+        text-align: center;
+        line-height: 50vh
+    }
+    .top {top:0}
+    .bottom {top: 50%}
+    .left {left: 0}
+    .right {left: 50%}
+    .info {
+        position: absolute;
+        width: 600px;
+        height: 200px;
+        line-height: 200px;
+        z-index: 5;
+        background: #08080891;
+        text-align: center;
+        left: 50%;
+        margin-left: -300px;
+        top: 50%;
+        margin-top: -100px;
+        font-size: 48px;
+        color: white;
+        font-weight: bold;
+        font-family: system-ui;
+    }
+    .guess-block {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        z-index: 2;
+    }
+    .hide {
+        display: none !important;
+    }
+</style>
+<body>
+    <div class="info">GET READY</div>
+    <div class="block top left" id="block1">Q</div>
+    <div class="block top right" id="block2">P</div>
+    <div class="block bottom left" id="block3">Z</div>
+    <div class="block bottom right" id="block4">M</div>
+    <div class="guess-block hide"></div>
+</body>
+<script>
+    var guessBlock = document.querySelector('.guess-block')
+    var infoBlock = document.querySelector('.info')
+    var isTimeToGuess = false
+    var activeColor
+    var startTime
+    var roundNo = 1
+    var roundCount = 5
+    var gameData = []
+    var colors = ['#d8d818', '#db5e5e', '#12d78f', '#1779d1']
+    let keyCodesMap = { 'q': 'top.left',
+                        'p': 'top.right',
+                        'z': 'bottom.left',
+                        'm': 'bottom.right' }
+    document.addEventListener("DOMContentLoaded", function(event) {
+        setupRound()
+    })
+    document.addEventListener("keyup", function(event) {
+        if (!keyCodesMap.hasOwnProperty(event.key)) return
+        if (!isTimeToGuess) return
+        isTimeToGuess = false
+        var chosenSide = keyCodesMap[event.key]
+        var chosenColor = document.querySelector(`.block.${chosenSide}`).getAttribute('color')
+        var guessTime = new Date()
+        var reaction = ( guessTime - startTime ) / 1000
+        var status = 'Correct'
+        console.log(`${chosenColor} vs ${activeColor}`)
+        if (chosenColor != activeColor)
+            status = 'Wrong'
+        var infoText = `${status}! Reaction: ${reaction}s`
+        gameData.push({'time': reaction, 'correct': status == 'Correct'})
+        infoBlock.textContent = infoText
+        setTimeout(setupRound, 2000)
+    })
+    function setupRound() {
+        if (roundNo > roundCount) {
+            finish()
+            return
+        }
+        guessBlock.classList.add('hide')
+        infoBlock.textContent = 'Get ready!'
+        randomizeColors().then(() => {
+            startRound()
+        })
+    }
+    function randomizeColors() {
+        return new Promise((resolve, reject) => {
+            function step (i = 0) {
+                var maxSteps = 10
+                if (i >= maxSteps) {
+                    resolve(true)
+                    return
+                }
+                randomizeColorStep()
+                setTimeout(step, 200, i+1)
+            }
+            step()
+        })
+    }
+    function randomizeColorStep() {
+        let colorCopy = clone(colors)
+        for (let i = 0; i<colors.length; i++) {
+            let rnd = Math.floor(Math.random() * colorCopy.length)
+            setBlockColor(i+1, colorCopy.splice(rnd, 1))
+        }
+    }
+    function setBlockColor(i, color){
+        document.getElementById(`block${i}`).style.backgroundColor = color
+        document.getElementById(`block${i}`).setAttribute('color', color)
+    }
+    function clone(value) {
+        return JSON.parse(JSON.stringify(value))
+    }
+    function startRound() {
+        roundNo++
+        let minWaitTime = 1000
+        let maxWaitTime = 2500
+        let randomWait = Math.random() * (maxWaitTime-minWaitTime) + minWaitTime
+        setTimeout(round, randomWait)
+    }
+    function finish() {
+        let correctTime = gameData.filter(o => o.correct).length
+        let totalTime = gameData.map(o => o.time).reduce((a, b) => a + b, 0)
+        let avgReactionTime = parseInt(totalTime / roundCount * 100) / 100
+        infoBlock.textContent = `GAME OVER. \n
+                        ${correctTime}/${roundCount} correct \n
+                        Avg reaction: ${avgReactionTime}s` 
+    }
+
+    function round() {
+        activeColor = colors[Math.floor(Math.random() * colors.length)]
+        guessBlock.classList.add(activeColor)
+        guessBlock.style.backgroundColor = activeColor
+        guessBlock.classList.remove('hide')
+        infoBlock.textContent = 'GUESS THE SIDE!'
+        isTimeToGuess = true
+        startTime = new Date()
+    }
+</script>
+</html>

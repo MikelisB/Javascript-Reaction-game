@@ -1,0 +1,6 @@
+All the screen is divided into 4 parts - each with a different color.
+After random time the screen turns to one color. you have to press a button of that side.
+Change roundCount to go more rounds.
+Change colors[] list to set different colors.
+randomizeColors() method has some defined values for shuffling the colors (speed and times).
+Code is not great, but a great way to learn how to use Vanilla JS with HTML.
